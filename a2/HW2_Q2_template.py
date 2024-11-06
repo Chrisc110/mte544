@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import scipy.linalg
 import random
 import pandas as pd
+import math
 def plot_ellipse(Q, b, ax):
     S = scipy.linalg.sqrtm(np.linalg.inv(Q))
     
@@ -70,7 +71,6 @@ def fit_ellipse_subset(points):
     b_prime = np.array([-1,-1,-1,-1,-1])
 
     x = scipy.linalg.solve(A_prime, b_prime)
-    print(x)
 
     A = x[0]
     B = x[1]
@@ -84,16 +84,15 @@ def fit_ellipse_subset(points):
     V = np.array([[D], [E]])
     S = np.array([1])
 
-
     alpha = 1.0 / ((Z @ np.linalg.inv(Y) @ V) - S)
 
-
     Q = alpha * Y
-    b = np.linalg.inv(Y) @ V
+    b = np.ravel(np.linalg.inv(Y) @ V)
     ##### END #####
     return Q, b
 
-def ransac_ellipse(data, num_iterations=1000, threshold=0.2):
+
+def ransac_ellipse(data, num_iterations=4000, threshold=0.1):
     inliers = []
     # Given the data sets, perform RANSAC to find the best Q and b as well as the inliers
     # Hint: You should use fit_ellipse_subset 
@@ -101,13 +100,54 @@ def ransac_ellipse(data, num_iterations=1000, threshold=0.2):
 
     ##### ADD your code here : #####
 
-    # detect if the ellipse is too eccentric*
-    [e_vals,_] = np.linalg.eigh(scipy.linalg.sqrtm(np.linalg.inv(Q)))
-    if e_vals[0]>20 or e_vals[1]>20:
-        continue
-    ...
+    current_iteration = 0
+    bestQ = 0
+    bestb = 0
+    best_num_inliers = 0
+    cur_num_inliers = 0
+    best_set_inliers = np.empty((0, 2))
+    cur_set_inliers = np.empty((0, 2))
+
+    while current_iteration < num_iterations:
+
+        
+        #pick 5 random points
+        sample_points = data[np.random.choice(data.shape[0], 5, replace=False), :]
+
+        #get Q and b
+        Q, b = fit_ellipse_subset(sample_points)
+
+
+        # detect if the ellipse is too eccentric*
+        [e_vals,_] = np.linalg.eigh(scipy.linalg.sqrtm(np.linalg.inv(Q)))
+        if e_vals[0]>20 or e_vals[1]>20:
+            continue
+
+        if not is_positive_definite(Q):
+            continue
+
+        #iterate through the data
+        for point in data:
+            val = (point - b).T @ Q @ (point - b)
+            mag = math.sqrt(val) - 1
+            if abs(mag) < threshold:
+                #increment cur_num_inliers
+                cur_num_inliers += 1
+                cur_set_inliers = np.vstack((cur_set_inliers, point))
+            
+        #if cur_num_inliers > best_num_inliers
+        if cur_num_inliers > best_num_inliers:
+            best_num_inliers = cur_num_inliers
+            best_set_inliers = cur_set_inliers
+            bestQ = Q
+            bestb = b
+
+        cur_set_inliers = np.empty((0, 2))
+        cur_num_inliers = 0
+        current_iteration += 1
+
     ##### END #####
-    return Q,b,inliers
+    return bestQ,bestb,best_set_inliers
 
 if __name__ == "__main__":
     # Load the data from CSV file and select N random points

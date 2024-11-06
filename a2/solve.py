@@ -7,8 +7,7 @@ import scipy.linalg
 import random
 import pandas as pd
 
-def plot_ellipse(Q, b):
-    fig, ax = plt.subplots(1, 1, figsize=(16, 8))
+def plot_ellipse(Q, b, ax):
     S = scipy.linalg.sqrtm(np.linalg.inv(Q))
     
     eigvals, eigvecs = np.linalg.eigh(S)
@@ -26,6 +25,14 @@ def plot_ellipse(Q, b):
     ax.set_ylabel('y')
     ax.legend(loc='best')
     ax.grid(True)
+
+# def visualize_data(p, ax, inliers, threshold):
+#     ax.scatter(p[:, 0], p[:, 1], color='red', alpha=0.5, label='Raw Measurements (Ellipse)')
+#     ax.scatter(inliers[:, 0], inliers[:, 1], color='purple', alpha=0.7, label='Inliers')
+
+#     for point in inliers:
+#         circle = plt.Circle(point, threshold, color='orange', fill=False, linestyle='--', alpha=0.7)
+#         ax.add_patch(circle)
 
 x1, y1 = (2.92, -6.01)
 x2, y2 = (3.40, -7.20)
@@ -60,10 +67,12 @@ alpha = 1.0 / ((Z @ np.linalg.inv(Y) @ V) - S)
 
 
 Q = alpha * Y
-b = (np.linalg.inv(Y) @ V)
+b = np.ravel(np.linalg.inv(Y) @ V)
 
 print(f"Q: {Q}")
 print(f"b: {b}")
 
-plot_ellipse(Q, b)
+
+fig, ax1 = plt.subplots(1, 1, figsize=(16, 8))
+plot_ellipse(Q, b, ax1)
 plt.show()
