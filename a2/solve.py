@@ -71,6 +71,7 @@ b = np.ravel(np.linalg.inv(Y) @ V)
 
 print(f"Q: {Q}")
 print(f"b: {b}")
+print(f"alpha: {alpha}")
 
 
 fig, ax1 = plt.subplots(1, 1, figsize=(16, 8))
