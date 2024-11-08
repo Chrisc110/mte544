@@ -98,7 +98,7 @@ def fit_ellipse_subset(points):
     return Q, b
 
 
-def ransac_ellipse(data, num_iterations=1000, threshold=0.1):
+def ransac_ellipse(data, num_iterations=1000, threshold=0.2):
     inliers = []
     # Given the data sets, perform RANSAC to find the best Q and b as well as the inliers
     # Hint: You should use fit_ellipse_subset 

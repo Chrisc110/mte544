@@ -22,6 +22,8 @@ def moodeng_behavior_update(state, A):
     # Given the current state, and the transition matrix A, 
     # randomly return the next state of Moo-Deng based on A
     ##### ADD your code here : #####
+
+    # Convert the integer state into a matrix so we can multiply by A
     state_matrix = 0
     if state == 1:
         state_matrix = np.array([[1], [0], [0]])
@@ -32,6 +34,7 @@ def moodeng_behavior_update(state, A):
 
     next_state_matrix = A @ state_matrix
 
+    # based on the probabilities, randomly pick a state
     next_state = np.random.choice([1, 2, 3], p=next_state_matrix.flatten())
     ##### END #####
     return next_state
@@ -44,19 +47,22 @@ def sensor_measurement(state, C):
     # R -> np.array([0,1,0])
     # P -> np.array([0,0,1])
     ##### ADD your code here : #####
-
-    sensor_matrix = 0
+    
+    # Convert the integer state into a matrix so we can multiply by C
+    state_matrix = 0
     if state == 1:
-        sensor_matrix = np.array([[1], [0], [0]])
+        state_matrix = np.array([[1], [0], [0]])
     elif state == 2:
-        sensor_matrix = np.array([[0], [1], [0]])
+        state_matrix = np.array([[0], [1], [0]])
     else:
-        sensor_matrix = np.array([[0], [0], [1]])
+        state_matrix = np.array([[0], [0], [1]])
 
-    measurement_state = C @ sensor_matrix
+    measurement_state = C @ state_matrix
 
+    #based on the probabilities, randomly pick a measurement
     measurement_state = np.random.choice([1, 2, 3], p=measurement_state.flatten())
 
+    # convert that measurement integer back into a matrix to feed back
     if measurement_state == 1:
         measurement = np.array([[1], [0], [0]])
     elif measurement_state == 2:
@@ -67,17 +73,6 @@ def sensor_measurement(state, C):
     ##### END #####
     return measurement
 
-def sensor_measurement_matrix(sensor_measurement):
-    sensor_matrix = 0
-    if sensor_measurement == 1:
-        sensor_matrix = np.array([[1], [0], [0]])
-    elif sensor_measurement == 2:
-        sensor_matrix = np.array([[0], [1], [0]])
-    else:
-        sensor_matrix = np.array([[0], [0], [1]])
-
-    return sensor_matrix
-    
 def sim_moodeng(initial_state=1,iteration = 20):
     # Given an initial state of Moo-Deng's whereabout and number of iteration,
     # simulate Moo-Deng's behavior and the designed state estimator
@@ -93,6 +88,7 @@ def sim_moodeng(initial_state=1,iteration = 20):
                   [0.1, 0.1, 0.85]])
     ##### END #####
 
+    # initalize some variable to use later
     states = []
     measurements = []
     estimated_states = []
@@ -103,17 +99,24 @@ def sim_moodeng(initial_state=1,iteration = 20):
     for i in range(iteration):
                
         ##### ADD your code here : #####
-        next_state = moodeng_behavior_update(state, A)
-        measurement = sensor_measurement(state, C)
         
+        #get the simulated true next state
+        next_state = moodeng_behavior_update(state, A)
+        #based on the next state, get the measurement
+        measurement = sensor_measurement(next_state, C)
+        
+        #calculate the prediction
         prediction_k = A @ previous_belief
 
-        updated_belief = C @ measurement * prediction_k
-        nu = 1/np.sum(updated_belief)
+        #get the updated belief 
+        updated_belief = C.T @ measurement * prediction_k
+        nu = 1/np.sum(updated_belief)   #normalizer
         updated_belief = nu * updated_belief
 
+        #pick the estimated state as the state with the highest probability
         estimated_state =np.argmax(updated_belief) +1
 
+        #update for next iteration
         previous_belief = updated_belief
         state = next_state
 
@@ -132,7 +135,7 @@ states, measurements, estimated, beliefs = sim_moodeng(initial_state=1, iteratio
 
 readings = decode_measurement(measurements)
 # Print results
-print("True states:          ", states)
-print("Sensor measurements:  ", readings)
-print("Estimated states:     ", estimated)
+print("True states:          ", [int(x) for x in states])
+print("Sensor measurements:  ", [int(x) for x in readings])
+print("Estimated states:     ", [int(x) for x in estimated])
 print("Belief sequence:      ", np.array(beliefs))
